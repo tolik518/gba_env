@@ -225,14 +225,14 @@ pub fn get_env() -> Environment {
         Environment::MGBA
     } else if detect_nocashba_debug() {
         Environment::NoCashGBA
-    //} else if detect_android_myboy_emulator() { //<-- will break VBA and gpSP
+    //} else if detect_android_myboy_emulator() { //<-- will break on real hardware and gpSP
     //    Environment::MyBoy
-    //} else if detect_vba() { //<-- will break on real hardware
-    //    Environment::VisualBoyAdvance
     } else if detect_real_gba() {
         Environment::GameBoyAdvance
     } else if detect_gba_micro() {
         Environment::GameBoyAdvanceMicro
+    } else if detect_vba() { //<-- will break on gpSP
+        Environment::VisualBoyAdvance
     } else {
         Environment::Unknown
     }
