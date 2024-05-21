@@ -166,7 +166,7 @@ fn ram_overclock() -> bool {
 /// mGBA: `false`
 /// No$GBA (debug): `false`
 /// No$GBA: `false`
-/// GBA: `false`
+/// GBA: `false` / crash (not sure yet)
 /// MyBoy: not tested
 /// VBA: `false`
 pub fn detect_android_myboy_emulator() -> bool {
@@ -225,8 +225,8 @@ pub fn get_env() -> Environment {
         Environment::MGBA
     } else if detect_nocashba_debug() {
         Environment::NoCashGBA
-    } else if detect_android_myboy_emulator() { //<-- will break VBA and gpSP
-        Environment::MyBoy
+    //} else if detect_android_myboy_emulator() { //<-- will break VBA and gpSP
+    //    Environment::MyBoy
     //} else if detect_vba() { //<-- will break on real hardware
     //    Environment::VisualBoyAdvance
     } else if detect_real_gba() {

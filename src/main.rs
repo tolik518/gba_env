@@ -41,11 +41,10 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut renderer = FONT.render_text((0u16, 0u16));
 
     let mut input = agb::input::ButtonController::new();
-    let mut writer = renderer.writer(1, 0, &mut bg, &mut vram);
+    let _ = vram.new_dynamic_tile().fill_with(0);
 
-    writeln!(writer, "GBA: {}", detect_real_gba()); //<- idk why, but this is always needed on real hardware
-    //let _ = detect_real_gba(); <- this doesnt seem to be enough
-    writeln!(writer, "System: {:?}", get_env()); //<- this also calls detect_real_gba() inside it
+    let mut writer = renderer.writer(1, 0, &mut bg, &mut vram);
+    writeln!(writer, "System: {:?}", get_env()).unwrap();
 
     writer.commit();
 
