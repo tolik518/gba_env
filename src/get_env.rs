@@ -4,7 +4,7 @@ use core::arch::asm;
 use core::ptr::{read_volatile, write_volatile};
 
 const MEMCTRL_REGISTER: *mut u32 = 0x4000800 as *mut u32;
-const TEST_ADDRESS: *mut u32 = 0x2000000 as *mut u32;
+const EWRAM_STATIC_DATA: *mut u32 = 0x2000000 as *mut u32;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Environment {
@@ -22,9 +22,9 @@ pub enum Environment {
 #[inline(never)]
 fn ram_test() -> bool {
     unsafe {
-        write_volatile(TEST_ADDRESS, 0xDEADBEEF);
-        let read_value = read_volatile(TEST_ADDRESS);
-        write_volatile(TEST_ADDRESS, 0); // Clear the value to avoid false positives
+        write_volatile(EWRAM_STATIC_DATA, 0xDEADBEEF);
+        let read_value = read_volatile(EWRAM_STATIC_DATA);
+        write_volatile(EWRAM_STATIC_DATA, 0); // Clear the value to avoid false positives
         read_value == 0xDEADBEEF
     }
 }
@@ -140,7 +140,6 @@ pub fn detect_nocashba_debug() -> bool {
 /// VBA: `false`
 #[inline(never)]
 pub fn detect_real_gba() -> bool {
-    const MEMCTRL_REGISTER: *const u32 = 0x4000800 as *const u32;
     unsafe {
         let memctrl_reg = read_volatile(MEMCTRL_REGISTER);
         let result = memctrl_reg == 0x0D000020 || memctrl_reg == 0x0E000020;
@@ -151,9 +150,6 @@ pub fn detect_real_gba() -> bool {
 
 #[inline(never)]
 fn ram_overclock() -> bool {
-    const MEMCTRL_REGISTER: *mut u32 = 0x4000800 as *mut u32;
-    const EWRAM_STATIC_DATA: *mut i32 = 0x2000000 as *mut i32;
-
     unsafe {
         write_volatile(MEMCTRL_REGISTER, 0x0E000020);
         write_volatile(EWRAM_STATIC_DATA, 1);
@@ -225,23 +221,15 @@ pub fn detect_vba() -> bool {
 
 /// Returns the current system environment.
 pub fn get_env() -> Environment {
-
-    if detect_ds() {
-        Environment::NintendoDS
-    } else if detect_mgba() {
-        Environment::MGBA
-    } else if detect_nocashba_debug() {
-        Environment::NoCashGBA
-    //} else if detect_android_myboy_emulator() { //<-- will break on real hardware and gpSP
-    //    Environment::MyBoy
-    } else if detect_real_gba() {
-        Environment::GameBoyAdvance
-    } else if detect_gba_micro() {
-        Environment::GameBoyAdvanceMicro
-    } else if detect_vba() { //<-- will break on gpSP
-        Environment::VisualBoyAdvance
-    } else {
-        Environment::Unknown
+    match () {
+        _ if detect_ds() => Environment::NintendoDS,
+        _ if detect_mgba() => Environment::MGBA,
+        _ if detect_nocashba_debug() => Environment::NoCashGBA,
+        _ if detect_real_gba() => Environment::GameBoyAdvance,
+        _ if detect_gba_micro() => Environment::GameBoyAdvanceMicro,
+        // gbSP detection should go in here or above
+        _ if detect_android_myboy_emulator() => Environment::MyBoy, //<-- will break on gpSP
+        _ if detect_vba() => Environment::VisualBoyAdvance, //<-- will break on gpSP
+        _ => Environment::Unknown,
     }
 }
-
