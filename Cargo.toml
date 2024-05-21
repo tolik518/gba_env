@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 #agb = "0.20.0"
 agb = { path = "../agb/agb" }
+gba_clock = "0.3.1"
 
 [profile.dev]
 opt-level = 3
