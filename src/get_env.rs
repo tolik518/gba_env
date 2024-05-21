@@ -3,6 +3,9 @@
 use core::arch::asm;
 use core::ptr::{read_volatile, write_volatile};
 
+const MEMCTRL_REGISTER: *mut u32 = 0x4000800 as *mut u32;
+const TEST_ADDRESS: *mut u32 = 0x2000000 as *mut u32;
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum Environment {
     NintendoDS,
@@ -12,13 +15,11 @@ pub enum Environment {
     MyBoy,
     VisualBoyAdvance,
     GameBoyAdvanceMicro,
+    GpSP,
     Unknown,
 }
 
-
-const MEMCTRL_REGISTER: *mut u32 = 0x4000800 as *mut u32;
-const TEST_ADDRESS: *mut u32 = 0x2000000 as *mut u32;
-
+#[inline(never)]
 fn ram_test() -> bool {
     unsafe {
         write_volatile(TEST_ADDRESS, 0xDEADBEEF);
@@ -32,6 +33,7 @@ fn ram_test() -> bool {
 /// Should always return 0x0E000020
 /// On NDS it will return an open bus value (i.e 0x6E156015)
 /// On a GBA Micro it will return 0x0D000020
+#[inline(never)]
 fn dram_training() -> u32 {
     let original_value = unsafe { read_volatile(MEMCTRL_REGISTER) };
     let base_value = original_value & !(0xF << 24); // Clear the bits we're going to modify
@@ -61,6 +63,7 @@ fn dram_training() -> u32 {
 /// GBA Micro: `true`
 /// MyBoy: not tested
 /// VBA: `false`
+#[inline(never)]
 pub fn detect_gba_micro() -> bool {
     dram_training() == 0x0D000020
 }
@@ -73,6 +76,7 @@ pub fn detect_gba_micro() -> bool {
 /// GBA: `false`
 /// MyBoy: not tested
 /// VBA: `false`
+#[inline(never)]
 pub fn detect_ds() -> bool {
     let mut result: u32;
     unsafe {
@@ -116,6 +120,7 @@ pub fn detect_mgba() -> bool {
 /// GBA: `false`
 /// MyBoy: not tested
 /// VBA: `false`
+#[inline(never)]
 pub fn detect_nocashba_debug() -> bool {
     const NOCASH_SIG: *const [u8; 7] = 0x04FFFA00 as *const [u8; 7];
     const NOCASH_SIG_STR: &[u8; 7] = b"no$gba ";
@@ -133,6 +138,7 @@ pub fn detect_nocashba_debug() -> bool {
 /// GBA: `true`
 /// MyBoy: not tested
 /// VBA: `false`
+#[inline(never)]
 pub fn detect_real_gba() -> bool {
     const MEMCTRL_REGISTER: *const u32 = 0x4000800 as *const u32;
     unsafe {
@@ -169,6 +175,7 @@ fn ram_overclock() -> bool {
 /// GBA: `false` / crash (not sure yet)
 /// MyBoy: not tested
 /// VBA: `false`
+#[inline(never)]
 pub fn detect_android_myboy_emulator() -> bool {
     const MODE_0: u16 = 0;
     const BG0_ENABLE: u16 = 1 << 8;
@@ -196,6 +203,7 @@ pub fn detect_android_myboy_emulator() -> bool {
 /// GBA: crash
 /// MyBoy: not tested
 /// VBA: `true`
+#[inline(never)]
 pub fn detect_vba() -> bool {
     const TEST_MESSAGE: &str = "VBA";
     let detected: bool;
@@ -217,7 +225,6 @@ pub fn detect_vba() -> bool {
 
 /// Returns the current system environment.
 pub fn get_env() -> Environment {
-    detect_real_gba();
 
     if detect_ds() {
         Environment::NintendoDS
