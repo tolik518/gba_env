@@ -2,7 +2,7 @@
 
 Crate for detecting the environment for Game Boy Advance ROMs (GBA/NDS/mGBA/VBA/gpSP/etc)
 
-You can find the documentation for gba_env [here](https://docs.rs/tolik518/latest/gba_env/).
+You can find the documentation for gba_env [here](https://docs.rs/gba_env/latest/gba_env/).
 
 ## Usage
 
