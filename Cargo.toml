@@ -4,6 +4,9 @@ description = "Crate for detecting the environment for GameBoy Advance ROMs (GBA
 version = "1.0.0"
 authors = ["Anatolij Vasilev <tolik518>"]
 license = "GPL-3.0 OR MIT OR Apache-2.0"
+categories = ["no-std", "embedded", "game-development"]
+keywords = ["gba", "agb", "gameboy-advance"]
+exclude = ["examples"]
 repository = "https://github.com/tolik518/gba_env"
 edition = "2021"
 
@@ -20,6 +23,3 @@ debug = true
 opt-level = 3
 lto = "fat"
 debug = false
-
-[workspace]
-exclude = ["examples"]
