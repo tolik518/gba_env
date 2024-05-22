@@ -4,28 +4,27 @@ use core::arch::asm;
 use core::ptr::{read_volatile, write_volatile};
 
 const MEMCTRL_REGISTER: *mut u32 = 0x4000800 as *mut u32;
-const EWRAM_STATIC_DATA: *mut u32 = 0x2000000 as *mut u32;
+const EWRAM_STATIC_DATA: *mut i32 = 0x2000000 as *mut i32;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Environment {
     NintendoDS,
-    MGBA,
+    MGBA, // Or NanoBoyAdvance
     NoCashGBA,
     GameBoyAdvance,
-    MyBoy,
+    GpSp, // Or MyBoy! Android Emulator
     VisualBoyAdvance,
     GameBoyAdvanceMicro,
-    GpSP,
     Unknown,
 }
 
 #[inline(never)]
 fn ram_test() -> bool {
     unsafe {
-        write_volatile(EWRAM_STATIC_DATA, 0xDEADBEEF);
+        write_volatile(EWRAM_STATIC_DATA, 0x70717_518);
         let read_value = read_volatile(EWRAM_STATIC_DATA);
         write_volatile(EWRAM_STATIC_DATA, 0); // Clear the value to avoid false positives
-        read_value == 0xDEADBEEF
+        read_value == 0x70717_518
     }
 }
 
@@ -46,10 +45,15 @@ fn dram_training() -> u32 {
             if ram_test() {
                 last_known_good_value = memctrl_value;
             } else {
-                write_volatile(MEMCTRL_REGISTER, last_known_good_value);
+                write_volatile(MEMCTRL_REGISTER, original_value); // Restore the original value
                 return last_known_good_value;
             }
         }
+    }
+
+    // Restore the original value before returning
+    unsafe {
+        write_volatile(MEMCTRL_REGISTER, original_value);
     }
 
     last_known_good_value
@@ -62,8 +66,8 @@ fn dram_training() -> u32 {
 /// GBA: `true`
 /// GBA Micro: `true`
 /// MyBoy: not tested
+/// gpSP: `false`
 /// VBA: `false`
-#[inline(never)]
 pub fn detect_gba_micro() -> bool {
     dram_training() == 0x0D000020
 }
@@ -75,6 +79,7 @@ pub fn detect_gba_micro() -> bool {
 /// No$GBA: `false`
 /// GBA: `false`
 /// MyBoy: not tested
+/// gpSP: `false`
 /// VBA: `false`
 #[inline(never)]
 pub fn detect_ds() -> bool {
@@ -101,14 +106,18 @@ pub fn detect_ds() -> bool {
 /// No$GBA: `false`
 /// GBA: `false`
 /// MyBoy: not tested
+/// gpSP: `false`
 /// VBA: `false`
 #[inline(never)]
 pub fn detect_mgba() -> bool {
     const REG_MGBA_ENABLE: *mut u16 = 0x04FFF780 as *mut u16;
+    let original_value = unsafe { read_volatile(REG_MGBA_ENABLE) };
 
     unsafe {
         write_volatile(REG_MGBA_ENABLE, 0xC0DE);
-        read_volatile(REG_MGBA_ENABLE) == 0x1DEA
+        let result = read_volatile(REG_MGBA_ENABLE) == 0x1DEA;
+        write_volatile(REG_MGBA_ENABLE, original_value); // Restore original value
+        result
     }
 }
 
@@ -119,6 +128,7 @@ pub fn detect_mgba() -> bool {
 /// No$GBA: `false`
 /// GBA: `false`
 /// MyBoy: not tested
+/// gpSP: `false`
 /// VBA: `false`
 #[inline(never)]
 pub fn detect_nocashba_debug() -> bool {
@@ -137,24 +147,26 @@ pub fn detect_nocashba_debug() -> bool {
 /// No$GBA: `true`
 /// GBA: `true`
 /// MyBoy: not tested
+/// gpSP: `false`
 /// VBA: `false`
 #[inline(never)]
 pub fn detect_real_gba() -> bool {
     unsafe {
         let memctrl_reg = read_volatile(MEMCTRL_REGISTER);
         let result = memctrl_reg == 0x0D000020 || memctrl_reg == 0x0E000020;
-        core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst); // Prevent compiler reordering
         result
     }
 }
 
-#[inline(never)]
 fn ram_overclock() -> bool {
     unsafe {
         write_volatile(MEMCTRL_REGISTER, 0x0E000020);
-        write_volatile(EWRAM_STATIC_DATA, 1);
+        static mut EWRAM_STATIC_DATA: i32 = 0;
+        let ewram_static_data = &mut EWRAM_STATIC_DATA as *mut i32;
 
-        if read_volatile(EWRAM_STATIC_DATA) != 1 {
+        write_volatile(ewram_static_data, 1);
+
+        if read_volatile(ewram_static_data) != 1 {
             write_volatile(MEMCTRL_REGISTER, 0x0D000020);
             false
         } else {
@@ -170,9 +182,10 @@ fn ram_overclock() -> bool {
 /// No$GBA: `false`
 /// GBA: `false` / crash (not sure yet)
 /// MyBoy: not tested
+/// gpSP: `true`
 /// VBA: `false`
 #[inline(never)]
-pub fn detect_android_myboy_emulator() -> bool {
+pub fn detect_gpSp() -> bool {
     const MODE_0: u16 = 0;
     const BG0_ENABLE: u16 = 1 << 8;
     const REG_DISPCNT: *mut u16 = 0x4000000 as *mut u16;
@@ -198,6 +211,7 @@ pub fn detect_android_myboy_emulator() -> bool {
 /// No$GBA: crash
 /// GBA: crash
 /// MyBoy: not tested
+/// gpSP: crash
 /// VBA: `true`
 #[inline(never)]
 pub fn detect_vba() -> bool {
@@ -221,15 +235,15 @@ pub fn detect_vba() -> bool {
 
 /// Returns the current system environment.
 pub fn get_env() -> Environment {
+    // the order of these checks is critical as the succeeding checks may crash the system
     match () {
         _ if detect_ds() => Environment::NintendoDS,
         _ if detect_mgba() => Environment::MGBA,
         _ if detect_nocashba_debug() => Environment::NoCashGBA,
         _ if detect_real_gba() => Environment::GameBoyAdvance,
         _ if detect_gba_micro() => Environment::GameBoyAdvanceMicro,
-        // gbSP detection should go in here or above
-        _ if detect_android_myboy_emulator() => Environment::MyBoy, //<-- will break on gpSP
-        _ if detect_vba() => Environment::VisualBoyAdvance, //<-- will break on gpSP
+        _ if detect_gpSp() => Environment::GpSp,
+        _ if detect_vba() => Environment::VisualBoyAdvance,
         _ => Environment::Unknown,
     }
 }
