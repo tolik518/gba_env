@@ -3,7 +3,7 @@ name = "gba_env"
 description = "Crate for detecting the environment for GameBoy Advance ROMs (GBA/NDS/mGBA/VBA/gpSP/etc)"
 version = "1.0.0"
 authors = ["Anatolij Vasilev <tolik518>"]
-license = "GPL-3.0 or MIT or Apache-2.0"
+license = "GPL-3.0 OR MIT OR Apache-2.0"
 repository = "https://github.com/tolik518/gba_env"
 edition = "2021"
 
