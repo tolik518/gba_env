@@ -4,7 +4,7 @@ build-std-features = ["compiler-builtins-mem"]
 
 [build]
 target = "thumbv4t-none-eabi"
-rustflags = ["-Z", "threads=32"]
+rustflags = ["-Z", "threads=4"]
 
 [target.thumbv4t-none-eabi]
 rustflags = [
@@ -12,7 +12,6 @@ rustflags = [
     "-Ctarget-cpu=arm7tdmi",
     "-Cforce-frame-pointers=yes",
 ]
-runner = ["mgba-qt", "-C", "logToStdout=1", "-C", "logLevel.gba.debug=127"]
 
 [target.armv4t-none-eabi]
 rustflags = [
@@ -20,4 +19,3 @@ rustflags = [
     "-Ctarget-cpu=arm7tdmi",
     "-Cforce-frame-pointers=yes",
 ]
-runner = ["mgba-qt", "-C", "logToStdout=1", "-C", "logLevel.gba.debug=127"]

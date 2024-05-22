@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use gba_env::get_env;
+use gba_env;
 use gba_env::Environment;
 
 use agb::{
@@ -39,7 +39,7 @@ fn main(mut gba: agb::Gba) -> ! {
 
     // Calling `get_env()` will return a value from the `Environment` enum
     let env = get_env();
-    writeln!(writer, "System: {:?}", get_env()).unwrap();
+    writeln!(writer, "System: {:?}", gba_env::get_env()).unwrap();
     writeln!(writer, "Press any button...").unwrap();
     writer.commit();
 

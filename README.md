@@ -1,6 +1,6 @@
-# gba_env
+# GBA env
 
-Crate for detecting the environment for GameBoy Advance ROMs.
+Crate for detecting the environment for Game Boy Advance ROMs (GBA/NDS/mGBA/VBA/gpSP/etc)
 
 You can find the documentation for gba_env [here](https://docs.rs/tolik518/latest/gba_env/).
 
@@ -16,11 +16,11 @@ gba_env = "1.0"
 Then you can use the crate in your code:
 
 ```rust
-use gba_env::get_env;
+use gba_env;
 use gba_env::Environment;
 
 fn main() {
-    let env = get_env();
+    let env = gba_env::get_env();
     if env == Environment::GpSp {
         println!("Sorry, but this ROM is not supported on gpSP.");
     } 
