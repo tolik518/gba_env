@@ -1,13 +1,15 @@
 [package]
-name = "gbafetch"
-version = "0.1.0"
-authors = [""]
+name = "gba_env"
+version = "1.0.0"
+authors = ["Anatolij Vasilev <tolik518>"]
+license = "GNU GPLv3 or MIT or Apache-2.0"
+repository = "https://github.com/tolik518/gba_env"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-agb = "0.20.1"
+# None
 
 [profile.dev]
 opt-level = 3
@@ -16,4 +18,4 @@ debug = true
 [profile.release]
 opt-level = 3
 lto = "fat"
-debug = true
+debug = false

@@ -3,8 +3,8 @@
 
 extern crate alloc;
 
-mod gba_env;
-
+use gba_env::get_env;
+use gba_env::Environment;
 use alloc::borrow::ToOwned;
 use alloc::string::ToString;
 use core::arch::asm;
@@ -27,7 +27,7 @@ fn main(mut gba: agb::Gba) -> ! {
     let vblank = agb::interrupt::VBlank::get();
 
     vram.set_background_palette_raw(&[
-        0x000B, 0x0ff0, 0x0fff, 0xf00f, 0xf0f0, 0x0f0f, 0xaaaa, 0x5555, 0x0000, 0x0000, 0x0000,
+        0x0006, 0x0ff0, 0x0fff, 0xf00f, 0xf0f0, 0x0f0f, 0xaaaa, 0x5555, 0x0000, 0x0000, 0x0000,
         0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
     ]);
     let _ = vram.new_dynamic_tile().fill_with(0);
@@ -42,7 +42,9 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut input = agb::input::ButtonController::new();
     let mut writer = renderer.writer(1, 0, &mut bg, &mut vram);
 
-    writeln!(writer, "System: {:?}", gba_env::get_env()).unwrap();
+    // Calling `get_env()` will return a value from the `Environment` enum
+    let env = get_env();
+    writeln!(writer, "System: {:?}", get_env()).unwrap();
     writeln!(writer, "Press any button...").unwrap();
     writer.commit();
 
@@ -51,14 +53,9 @@ fn main(mut gba: agb::Gba) -> ! {
         input.update();
 
         let mut writer = renderer.writer(1, 0, &mut bg, &mut vram);
-        if input.is_pressed(agb::input::Button::from_bits_retain(0b11_1111_1111)) {
-            writeln!(writer, "Any button was pressed, thanks for tuning in.").unwrap();
-        }
         writer.commit();
-
         bg.commit(&mut vram);
         bg.set_visible(true);
-
         renderer.clear(&mut vram);
     }
 }

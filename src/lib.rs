@@ -6,6 +6,10 @@ use core::ptr::{read_volatile, write_volatile};
 const MEMCTRL_REGISTER: *mut u32 = 0x4000800 as *mut u32;
 const EWRAM_STATIC_DATA: *mut i32 = 0x2000000 as *mut i32;
 
+/// Represents the current system environment.
+/// Note:
+/// - On NanoBoyAdvance it will return `MGBA`
+/// - On MyBoy! Android Emulator it will return `GpSp`
 #[derive(Debug, PartialEq, Eq)]
 pub enum Environment {
     NintendoDS,
@@ -21,13 +25,12 @@ pub enum Environment {
 #[inline(never)]
 fn ram_test() -> bool {
     unsafe {
-        write_volatile(EWRAM_STATIC_DATA, 0x70717_518);
+        write_volatile(EWRAM_STATIC_DATA, 0x70717518);
         let read_value = read_volatile(EWRAM_STATIC_DATA);
         write_volatile(EWRAM_STATIC_DATA, 0); // Clear the value to avoid false positives
-        read_value == 0x70717_518
+        read_value == 0x70717518
     }
 }
-
 
 /// Should always return 0x0E000020
 /// On NDS it will return an open bus value (i.e 0x6E156015)
@@ -59,6 +62,7 @@ fn dram_training() -> u32 {
     last_known_good_value
 }
 
+/// Detects if the current system is a GBA Micro.
 /// DS: `false`
 /// mGBA: `false`
 /// No$GBA (debug): `false`
@@ -135,9 +139,7 @@ pub fn detect_nocashba_debug() -> bool {
     const NOCASH_SIG: *const [u8; 7] = 0x04FFFA00 as *const [u8; 7];
     const NOCASH_SIG_STR: &[u8; 7] = b"no$gba ";
 
-    unsafe {
-        read_volatile(NOCASH_SIG) == *NOCASH_SIG_STR
-    }
+    unsafe { read_volatile(NOCASH_SIG) == *NOCASH_SIG_STR }
 }
 
 /// Detects if the system is a real Game Boy Advance.
@@ -153,8 +155,7 @@ pub fn detect_nocashba_debug() -> bool {
 pub fn detect_real_gba() -> bool {
     unsafe {
         let memctrl_reg = read_volatile(MEMCTRL_REGISTER);
-        let result = memctrl_reg == 0x0D000020 || memctrl_reg == 0x0E000020;
-        result
+        memctrl_reg == 0x0D000020 || memctrl_reg == 0x0E000020
     }
 }
 
@@ -185,7 +186,7 @@ fn ram_overclock() -> bool {
 /// gpSP: `true`
 /// VBA: `false`
 #[inline(never)]
-pub fn detect_gpSp() -> bool {
+pub fn detect_gpsp() -> bool {
     const MODE_0: u16 = 0;
     const BG0_ENABLE: u16 = 1 << 8;
     const REG_DISPCNT: *mut u16 = 0x4000000 as *mut u16;
@@ -242,7 +243,7 @@ pub fn get_env() -> Environment {
         _ if detect_nocashba_debug() => Environment::NoCashGBA,
         _ if detect_real_gba() => Environment::GameBoyAdvance,
         _ if detect_gba_micro() => Environment::GameBoyAdvanceMicro,
-        _ if detect_gpSp() => Environment::GpSp,
+        _ if detect_gpsp() => Environment::GpSp,
         _ if detect_vba() => Environment::VisualBoyAdvance,
         _ => Environment::Unknown,
     }
