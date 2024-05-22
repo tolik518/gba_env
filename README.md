@@ -6,7 +6,7 @@ You can find the documentation for gba_env [here](https://docs.rs/tolik518/lates
 
 ## Usage
 
-Add this to your `Cargo.toml`:
+You would need to use the nightly rust version and add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
