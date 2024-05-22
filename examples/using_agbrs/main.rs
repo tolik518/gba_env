@@ -1,13 +1,9 @@
 #![no_std]
 #![no_main]
 
-extern crate alloc;
-
 use gba_env::get_env;
 use gba_env::Environment;
-use alloc::borrow::ToOwned;
-use alloc::string::ToString;
-use core::arch::asm;
+
 use agb::{
     display::{
         tiled::{RegularBackgroundSize, TileFormat, TiledMap},
@@ -15,10 +11,9 @@ use agb::{
     },
     include_font,
 };
-
 use core::fmt::{Debug, Write};
 
-use core::ptr::{read_volatile, write_volatile};
+
 static FONT: Font = include_font!("fnt/ark-pixel-10px-proportional-ja.ttf", 10);
 
 #[agb::entry]
