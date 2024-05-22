@@ -30,3 +30,6 @@ fn main() {
 ## License
 This project is licensed under the GNU GPLv3 or MIT or Apache-2.0 License.
 Just pick the one that fits your needs.
+
+## Appendix
+All the information about the GBA environment detection were taken from the [gbadev](https://gbadev.net/) Discord server. So a huge thanks to the gbadev community!
