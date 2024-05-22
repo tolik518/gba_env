@@ -1,5 +1,6 @@
 [package]
 name = "gba_env"
+description = "Crate for detecting the environment for GameBoy Advance ROMs (GBA/NDS/mGBA/VBA/gpSP/etc)"
 version = "1.0.0"
 authors = ["Anatolij Vasilev <tolik518>"]
 license = "GNU GPLv3 or MIT or Apache-2.0"
