@@ -15,7 +15,7 @@ const EWRAM_STATIC_DATA: *mut i32 = 0x2000000 as *mut i32;
 pub enum Environment {
     /// Nintendo DS fat or lite
     NintendoDS,
-    /// MGBA or NanoBoyAdvance
+    NanoBoyAdvance,
     MGBA,
     /// No$GBA (debug mode)
     NoCashGBA,
@@ -32,16 +32,23 @@ pub fn get_env() -> Environment {
     // the order of these checks is critical as the succeeding checks may crash the system
     match () {
         _ if identify_ds() => Environment::NintendoDS,
-        _ if identify_mgba() => Environment::MGBA,
+        _ if identify_mgba() => distinguish_mgba_from_nanoboyadvance(),
         _ if identify_nocashba_debug() => Environment::NoCashGBA,
         _ if identify_real_gba() => Environment::GameBoyAdvance,
         _ if identify_gba_micro() => Environment::GameBoyAdvanceMicro,
         _ if identify_gpsp() => Environment::GpSp,
+        // insert Mesen check here
         _ if identify_vba() => Environment::VisualBoyAdvance,
         _ => Environment::Unknown,
     }
 }
 
+fn distinguish_mgba_from_nanoboyadvance() -> Environment {
+    if identify_real_gba() {
+        return Environment::MGBA;
+    }
+    Environment::NanoBoyAdvance
+}
 
 #[inline(never)]
 fn ram_test() -> bool {
@@ -86,6 +93,23 @@ fn dram_training() -> u32 {
 /// Detects if the current system is a GBA Micro. <br>
 /// DS: `false` <br>
 /// mGBA: `false` <br>
+/// NanoBoyAdvance: `true` <br>
+/// No$GBA (debug): `false` <br>
+/// No$GBA: `false` <br>
+/// GBA: `false` <br>
+/// GBA Micro: `false` <br>
+/// MyBoy: not tested <br>
+/// gpSP: `false` <br>
+/// VBA: `false` <br>
+/// Mesen: `false` <br>
+pub fn identify_nanoboyadvance() -> bool {
+    identify_mgba() && !identify_real_gba()
+}
+
+/// Detects if the current system is a GBA Micro. <br>
+/// DS: `false` <br>
+/// mGBA: `false` <br>
+/// NanoBoyAdvance: `false` <br>
 /// No$GBA (debug): `false` <br>
 /// No$GBA: `false` <br>
 /// GBA: `true` <br>
@@ -93,6 +117,7 @@ fn dram_training() -> u32 {
 /// MyBoy: not tested <br>
 /// gpSP: `false` <br>
 /// VBA: `false` <br>
+/// Mesen: `false` <br>
 pub fn identify_gba_micro() -> bool {
     dram_training() == 0x0D000020
 }
@@ -100,12 +125,14 @@ pub fn identify_gba_micro() -> bool {
 /// Detects if the current system is a Nintendo DS running in GBA mode. <br>
 /// DS: `false` <br>
 /// mGBA: `false` <br>
+/// NanoBoyAdvance: `false` <br>
 /// No$GBA (debug): `false` <br>
 /// No$GBA: `false` <br>
 /// GBA: `false` <br>
 /// MyBoy: not tested <br>
 /// gpSP: `false` <br>
 /// VBA: `false` <br>
+/// Mesen: `false` <br>
 #[inline(never)]
 pub fn identify_ds() -> bool {
     let mut result: u32;
@@ -127,12 +154,14 @@ pub fn identify_ds() -> bool {
 /// Detects if the system is running mGBA. <br>
 /// DS: `false` <br>
 /// mGBA: `true` <br>
+/// NanoBoyAdvance: `false` <br>
 /// No$GBA (debug): `false` <br>
 /// No$GBA: `false` <br>
 /// GBA: `false` <br>
 /// MyBoy: not tested <br>
 /// gpSP: `false` <br>
 /// VBA: `false` <br>
+/// Mesen: `false` <br>
 #[inline(never)]
 pub fn identify_mgba() -> bool {
     const REG_MGBA_ENABLE: *mut u16 = 0x04FFF780 as *mut u16;
@@ -149,12 +178,14 @@ pub fn identify_mgba() -> bool {
 /// Detects if the system is running no$gba debug. <br>
 /// DS: `false` <br>
 /// mGBA: `false` <br>
+/// NanoBoyAdvance: `false` <br>
 /// No$GBA (debug): `true` <br>
 /// No$GBA: `false` <br>
 /// GBA: `false` <br>
 /// MyBoy: not tested <br>
 /// gpSP: `false` <br>
 /// VBA: `false` <br>
+/// Mesen: `false` <br>
 #[inline(never)]
 pub fn identify_nocashba_debug() -> bool {
     const NOCASH_SIG: *const [u8; 7] = 0x04FFFA00 as *const [u8; 7];
@@ -166,12 +197,14 @@ pub fn identify_nocashba_debug() -> bool {
 /// Detects if the system is a real Game Boy Advance. <br>
 /// DS: `false` <br>
 /// mGBA: `true` <br>
+/// NanoBoyAdvance: `false` <br>
 /// No$GBA (debug): `true` <br>
 /// No$GBA: `true` <br>
 /// GBA: `true` <br>
 /// MyBoy: not tested <br>
 /// gpSP: `false` <br>
 /// VBA: `false` <br>
+/// Mesen: `false` <br>
 #[inline(never)]
 pub fn identify_real_gba() -> bool {
     unsafe {
@@ -200,12 +233,14 @@ fn ram_overclock() -> bool {
 /// Detects if the system is running the MyBoy emulator. <br>
 /// DS: `false` <br>
 /// mGBA: `false` <br>
+/// NanoBoyAdvance: `false` <br>
 /// No$GBA (debug): `false` <br>
 /// No$GBA: `false` <br>
 /// GBA: `false` / crash (not sure yet) <br>
 /// MyBoy: not tested <br>
 /// gpSP: `true` <br>
 /// VBA: `false` <br>
+/// Mesen: `false` <br>
 #[inline(never)]
 pub fn identify_gpsp() -> bool {
     const MODE_0: u16 = 0;
@@ -229,12 +264,14 @@ pub fn identify_gpsp() -> bool {
 /// Detects if the system is running VisualBoyAdvance. <br>
 /// DS: crash <br>
 /// mGBA: `true` <br>
+/// NanoBoyAdvance: crash <br>
 /// No$GBA (debug): crash <br>
 /// No$GBA: crash <br>
 /// GBA: crash <br>
 /// MyBoy: not tested <br>
 /// gpSP: crash <br>
 /// VBA: `true` <br>
+/// Mesen: crash <br>
 #[inline(never)]
 pub fn identify_vba() -> bool {
     const TEST_MESSAGE: &str = "VBA";
