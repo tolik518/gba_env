@@ -20,10 +20,10 @@ pub enum Environment {
     /// No$GBA (debug mode)
     NoCashGBA,
     GameBoyAdvance,
+    GameBoyAdvanceMicro,
     /// gpSP or MyBoy! Android Emulator
     GpSp,
     VisualBoyAdvance,
-    GameBoyAdvanceMicro,
     Unknown,
 }
 
@@ -41,85 +41,6 @@ pub fn get_env() -> Environment {
         _ if identify_vba() => Environment::VisualBoyAdvance,
         _ => Environment::Unknown,
     }
-}
-
-fn distinguish_mgba_from_nanoboyadvance() -> Environment {
-    if identify_real_gba() {
-        return Environment::MGBA;
-    }
-    Environment::NanoBoyAdvance
-}
-
-#[inline(never)]
-fn ram_test() -> bool {
-    unsafe {
-        write_volatile(EWRAM_STATIC_DATA, 0x70717518);
-        let read_value = read_volatile(EWRAM_STATIC_DATA);
-        write_volatile(EWRAM_STATIC_DATA, 0); // Clear the value to avoid false positives
-        read_value == 0x70717518
-    }
-}
-
-/// Should always return 0x0E000020 <br>
-/// On NDS it will return an open bus value (i.e 0x6E156015) <br>
-/// On a GBA Micro it will return 0x0D000020 <br>
-#[inline(never)]
-fn dram_training() -> u32 {
-    let original_value = unsafe { read_volatile(MEMCTRL_REGISTER) };
-    let base_value = original_value & !(0xF << 24); // Clear the bits we're going to modify
-    let mut last_known_good_value = base_value;
-
-    for i in 0..=0xE {
-        let memctrl_value = base_value | (i << 24);
-        unsafe {
-            write_volatile(MEMCTRL_REGISTER, memctrl_value);
-            if ram_test() {
-                last_known_good_value = memctrl_value;
-            } else {
-                write_volatile(MEMCTRL_REGISTER, original_value); // Restore the original value
-                return last_known_good_value;
-            }
-        }
-    }
-
-    // Restore the original value before returning
-    unsafe {
-        write_volatile(MEMCTRL_REGISTER, original_value);
-    }
-
-    last_known_good_value
-}
-
-/// Detects if the current system is a GBA Micro. <br>
-/// DS: `false` <br>
-/// mGBA: `false` <br>
-/// NanoBoyAdvance: `true` <br>
-/// No$GBA (debug): `false` <br>
-/// No$GBA: `false` <br>
-/// GBA: `false` <br>
-/// GBA Micro: `false` <br>
-/// MyBoy: not tested <br>
-/// gpSP: `false` <br>
-/// VBA: `false` <br>
-/// Mesen: `false` <br>
-pub fn identify_nanoboyadvance() -> bool {
-    identify_mgba() && !identify_real_gba()
-}
-
-/// Detects if the current system is a GBA Micro. <br>
-/// DS: `false` <br>
-/// mGBA: `false` <br>
-/// NanoBoyAdvance: `false` <br>
-/// No$GBA (debug): `false` <br>
-/// No$GBA: `false` <br>
-/// GBA: `true` <br>
-/// GBA Micro: `true` <br>
-/// MyBoy: not tested <br>
-/// gpSP: `false` <br>
-/// VBA: `false` <br>
-/// Mesen: `false` <br>
-pub fn identify_gba_micro() -> bool {
-    dram_training() == 0x0D000020
 }
 
 /// Detects if the current system is a Nintendo DS running in GBA mode. <br>
@@ -149,6 +70,22 @@ pub fn identify_ds() -> bool {
         );
     }
     result != 0 // Compare the result to determine if the system is a DS
+}
+
+/// Detects if the current system is a GBA Micro. <br>
+/// DS: `false` <br>
+/// mGBA: `false` <br>
+/// NanoBoyAdvance: `true` <br>
+/// No$GBA (debug): `false` <br>
+/// No$GBA: `false` <br>
+/// GBA: `false` <br>
+/// GBA Micro: `false` <br>
+/// MyBoy: not tested <br>
+/// gpSP: `false` <br>
+/// VBA: `false` <br>
+/// Mesen: `false` <br>
+pub fn identify_nanoboyadvance() -> bool {
+    identify_mgba() && !identify_real_gba()
 }
 
 /// Detects if the system is running mGBA. <br>
@@ -213,21 +150,20 @@ pub fn identify_real_gba() -> bool {
     }
 }
 
-fn ram_overclock() -> bool {
-    unsafe {
-        write_volatile(MEMCTRL_REGISTER, 0x0E000020);
-        static mut EWRAM_STATIC_DATA: i32 = 0;
-        let ewram_static_data = &mut EWRAM_STATIC_DATA as *mut i32;
-
-        write_volatile(ewram_static_data, 1);
-
-        if read_volatile(ewram_static_data) != 1 {
-            write_volatile(MEMCTRL_REGISTER, 0x0D000020);
-            false
-        } else {
-            true
-        }
-    }
+/// Detects if the current system is a GBA Micro. <br>
+/// DS: `false` <br>
+/// mGBA: `false` <br>
+/// NanoBoyAdvance: `false` <br>
+/// No$GBA (debug): `false` <br>
+/// No$GBA: `false` <br>
+/// GBA: `true` <br>
+/// GBA Micro: `true` <br>
+/// MyBoy: not tested <br>
+/// gpSP: `false` <br>
+/// VBA: `false` <br>
+/// Mesen: `false` <br>
+pub fn identify_gba_micro() -> bool {
+    dram_training() == 0x0D000020
 }
 
 /// Detects if the system is running the MyBoy emulator. <br>
@@ -290,4 +226,68 @@ pub fn identify_vba() -> bool {
         identified = true;
     }
     identified
+}
+
+fn distinguish_mgba_from_nanoboyadvance() -> Environment {
+    if identify_real_gba() {
+        return Environment::MGBA;
+    }
+    Environment::NanoBoyAdvance
+}
+
+#[inline(never)]
+fn ram_test() -> bool {
+    unsafe {
+        write_volatile(EWRAM_STATIC_DATA, 0x70717518);
+        let read_value = read_volatile(EWRAM_STATIC_DATA);
+        write_volatile(EWRAM_STATIC_DATA, 0); // Clear the value to avoid false positives
+        read_value == 0x70717518
+    }
+}
+
+/// Should always return 0x0E000020 <br>
+/// On NDS it will return an open bus value (i.e 0x6E156015) <br>
+/// On a GBA Micro it will return 0x0D000020 <br>
+#[inline(never)]
+fn dram_training() -> u32 {
+    let original_value = unsafe { read_volatile(MEMCTRL_REGISTER) };
+    let base_value = original_value & !(0xF << 24); // Clear the bits we're going to modify
+    let mut last_known_good_value = base_value;
+
+    for i in 0..=0xE {
+        let memctrl_value = base_value | (i << 24);
+        unsafe {
+            write_volatile(MEMCTRL_REGISTER, memctrl_value);
+            if ram_test() {
+                last_known_good_value = memctrl_value;
+            } else {
+                write_volatile(MEMCTRL_REGISTER, original_value); // Restore the original value
+                return last_known_good_value;
+            }
+        }
+    }
+
+    // Restore the original value before returning
+    unsafe {
+        write_volatile(MEMCTRL_REGISTER, original_value);
+    }
+
+    last_known_good_value
+}
+
+fn ram_overclock() -> bool {
+    unsafe {
+        write_volatile(MEMCTRL_REGISTER, 0x0E000020);
+        static mut EWRAM_STATIC_DATA: i32 = 0;
+        let ewram_static_data = &mut EWRAM_STATIC_DATA as *mut i32;
+
+        write_volatile(ewram_static_data, 1);
+
+        if read_volatile(ewram_static_data) != 1 {
+            write_volatile(MEMCTRL_REGISTER, 0x0D000020);
+            false
+        } else {
+            true
+        }
+    }
 }
