@@ -17,7 +17,7 @@ pub enum Environment {
     NintendoDS,
     NanoBoyAdvance,
     MGBA,
-    /// No$GBA (debug mode)
+    /// No$GBA (debug mode), won't detect No$GBA-W
     NoCashGBA,
     GameBoyAdvance,
     GameBoyAdvanceMicro,
