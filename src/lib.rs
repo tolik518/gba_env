@@ -214,14 +214,14 @@ pub fn identify_vba() -> bool {
     let identified: bool;
     unsafe {
         asm!(
-        "movs r0, {0}",
-        "svc  #255",
-        in(reg) TEST_MESSAGE.as_ptr(),
+            "movs r0, {0}",
+            "svc  #255",
+            in(reg) TEST_MESSAGE.as_ptr(),
         );
         asm!(
-        "movs r0, {0}",
-        "svc  #255",
-        in(reg) "\n".as_ptr(),
+            "movs r0, {0}",
+            "svc  #255",
+            in(reg) "\n".as_ptr(),
         );
         identified = true;
     }
