@@ -1,6 +1,6 @@
 # GBA env
 
-Crate for detecting the environment for Game Boy Advance ROMs (GBA/NDS/mGBA/VBA/gpSP/etc)
+A no_std rust crate for detecting the environment/system in which the Game Boy Advance ROM is currently running ex. GBA/NDS/mGBA/VBA/gpSP.
 
 You can find the documentation for gba_env [here](https://docs.rs/gba_env/latest/gba_env/).
 
